@@ -217,9 +217,9 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 	}
 	loadEventFired.Close()
 
-	if _, err = domContent.Recv(); err != nil {
-		return nil, err
-	}
+	// if _, err = domContent.Recv(); err != nil {
+	// 	return nil, err
+	// }
 
 	doc, err := c.C.DOM.GetDocument(ctx, nil)
 	if err != nil {
