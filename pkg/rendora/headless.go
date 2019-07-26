@@ -208,12 +208,12 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 
 	loadEventFired, err := c.C.Page.LoadEventFired(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, err = loadEventFired.Recv()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	loadEventFired.Close()
 
