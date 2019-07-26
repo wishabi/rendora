@@ -200,16 +200,22 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 		return nil, err
 	}
 
-	domContent, err := c.C.Page.DOMContentEventFired(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer domContent.Close()
+	// domContent, err := c.C.Page.DOMContentEventFired(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// defer domContent.Close()
 
-	waitUntil := c.rendora.c.Headless.WaitAfterDOMLoad
-	if waitUntil > 0 {
-		time.Sleep(time.Duration(waitUntil) * time.Millisecond)
+	loadEventFired, err := c.C.Page.LoadEventFired(ctx)
+	if err != nil {
+		return err
 	}
+
+	_, err = loadEventFired.Recv()
+	if err != nil {
+		return err
+	}
+	loadEventFired.Close()
 
 	if _, err = domContent.Recv(); err != nil {
 		return nil, err
