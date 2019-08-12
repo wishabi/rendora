@@ -189,10 +189,17 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 		return nil, err
 	}
 
+	t := time.Now()
+	log.Println("Started");
+	log.Println(t.Unix())
+
 	_, err = c.C.Page.Navigate(ctx, navArgs)
 	if err != nil {
 		return nil, err
 	}
+
+
+	err = c.C.Page.SetLifecycleEventsEnabled(ctx, page.NewSetLifecycleEventsEnabledArgs(true))
 
 	responseReply, err := networkResponse.Recv()
 
@@ -200,26 +207,24 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 		return nil, err
 	}
 
-	// domContent, err := c.C.Page.DOMContentEventFired(ctx)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// defer domContent.Close()
+	events, err := c.C.Page.LifecycleEvent(ctx)
 
-	loadEventFired, err := c.C.Page.LoadEventFired(ctx)
-	if err != nil {
-		return nil, err
+	defer events.Close()
+
+	for {
+		event, err := events.Recv();
+		if err != nil {
+			return nil, err
+		}
+		log.Println(event.Name)
+		if event.Name == "networkIdle" {
+			break
+		}
 	}
 
-	_, err = loadEventFired.Recv()
-	if err != nil {
-		return nil, err
-	}
-	loadEventFired.Close()
-
-	// if _, err = domContent.Recv(); err != nil {
-	// 	return nil, err
-	// }
+	log.Println("Finished");
+	tt := time.Now()
+	log.Println(tt.Unix());
 
 	doc, err := c.C.DOM.GetDocument(ctx, nil)
 	if err != nil {
