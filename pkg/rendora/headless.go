@@ -221,14 +221,13 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 		return nil, err
 	}
 
-	elementFound := false
 	sleepTime := c.rendora.c.Headless.ElementFoundTimeout
 	matcher := c.rendora.c.Headless.ElementMatcher
 	matchTimer := time.AfterFunc(time.Second*10, func() {
 		log.Fatal(matcher, " element not found.")
 	})
 
-	for elementFound == false {
+	for {
 		r, err := c.C.DOM.GetOuterHTML(ctx, &dom.GetOuterHTMLArgs{
 			NodeID: &doc.Root.NodeID,
 		})
@@ -236,9 +235,7 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 			return nil, err
 		}
 
-		hvs := strings.Contains(r.OuterHTML, matcher)
-		if hvs {
-			elementFound = true
+		if strings.Contains(r.OuterHTML, matcher) {
 			matchTimer.Stop()
 			break
 		} else {
