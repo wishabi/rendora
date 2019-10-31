@@ -54,7 +54,7 @@ type rendoraConfig struct {
 
 		WaitAfterDOMLoad    uint16 `mapstructure:"waitAfterDOMLoad" valid:"range(0|5000)"`
 		ElementFoundTimeout uint16 `mapstructure:"elementFoundTimeout" valid:"range(0|1000)"`
-		ElementSelector     string `mapstructure:"elementSelector"`
+		ElementMatcher      string `mapstructure:"elementMatcher"`
 	} `mapstructure:"headless"`
 
 	Cache struct {
@@ -131,7 +131,7 @@ func (R *Rendora) initConfig() error {
 	viper.SetDefault("headless.mode", "default")
 	viper.SetDefault("headless.waitAfterDOMLoad", 0)
 	viper.SetDefault("headless.elementFoundTimeout", 200)
-	viper.SetDefault("headless.elementSelector", "#marked-element")
+	viper.SetDefault("headless.elementMatcher", "flipp-marked-element")
 	viper.SetDefault("headless.timeout", 15)
 	viper.SetDefault("headless.internal.url", "http://localhost:9222")
 	viper.SetDefault("headless.cacheDisabled", false)

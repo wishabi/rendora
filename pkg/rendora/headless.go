@@ -20,10 +20,10 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/mafredri/cdp"
 	"github.com/mafredri/cdp/devtool"
 	"github.com/mafredri/cdp/protocol/dom"
@@ -221,27 +221,26 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 		return nil, err
 	}
 
-	domResponse, err := c.C.DOM.GetOuterHTML(ctx, &dom.GetOuterHTMLArgs{
-		NodeID: &doc.Root.NodeID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	//todo: get element by id, if not found -> sleep
 	elementFound := false
 	sleepTime := c.rendora.c.Headless.ElementFoundTimeout
-	selector := c.rendora.c.Headless.ElementSelector
-	for elementFound == false {
+	matcher := c.rendora.c.Headless.ElementMatcher
+	matchTimer := time.AfterFunc(time.Second*10, func() {
+		log.Fatal(matcher, " element not found.")
+	})
 
-		doc, err := goquery.NewDocument(uri)
+	for elementFound == false {
+		r, err := c.C.DOM.GetOuterHTML(ctx, &dom.GetOuterHTMLArgs{
+			NodeID: &doc.Root.NodeID,
+		})
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
-		el := doc.Find(selector)
-		if len(el.Nodes) != 0 {
+		hvs := strings.Contains(r.OuterHTML, matcher)
+		if hvs {
 			elementFound = true
+			matchTimer.Stop()
+			break
 		} else {
 			time.Sleep(time.Duration(sleepTime) * time.Millisecond)
 		}
@@ -251,6 +250,13 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 
 	if c.rendora.c.Server.Enable {
 		c.rendora.metrics.Duration.Observe(elapsed)
+	}
+
+	domResponse, err := c.C.DOM.GetOuterHTML(ctx, &dom.GetOuterHTMLArgs{
+		NodeID: &doc.Root.NodeID,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	responseHeaders := make(map[string]string)
