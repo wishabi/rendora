@@ -223,8 +223,13 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 
 	sleepTime := c.rendora.c.Headless.ElementFoundTimeout
 	matcher := c.rendora.c.Headless.ElementMatcher
-	matchTimer := time.AfterFunc(time.Second*10, func() {
-		log.Fatal(matcher, " element not found.")
+	timer := c.rendora.c.Headless.ElementMatchTimer
+	duration := time.Duration(timer) * time.Second
+
+	timeout := false
+	matchTimer := time.AfterFunc(duration, func() {
+		timeout = true
+		log.Println(matcher, " element not found.")
 	})
 
 	for {
@@ -235,7 +240,7 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 			return nil, err
 		}
 
-		if strings.Contains(r.OuterHTML, matcher) {
+		if strings.Contains(r.OuterHTML, matcher) || timeout {
 			matchTimer.Stop()
 			break
 		} else {
