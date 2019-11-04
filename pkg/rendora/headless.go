@@ -20,6 +20,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -208,10 +209,10 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 	}
 	defer domContent.Close()
 
-	waitUntil := c.rendora.c.Headless.WaitAfterDOMLoad
-	if waitUntil > 0 {
-		time.Sleep(time.Duration(waitUntil) * time.Millisecond)
-	}
+	// waitUntil := c.rendora.c.Headless.WaitAfterDOMLoad
+	// if waitUntil > 0 {
+	// 	time.Sleep(time.Duration(waitUntil) * time.Millisecond)
+	// }
 
 	if _, err = domContent.Recv(); err != nil {
 		return nil, err
@@ -222,17 +223,44 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 		return nil, err
 	}
 
-	domResponse, err := c.C.DOM.GetOuterHTML(ctx, &dom.GetOuterHTMLArgs{
-		NodeID: &doc.Root.NodeID,
+	sleepTime := c.rendora.c.Headless.ElementFoundTimeout
+	matcher := c.rendora.c.Headless.ElementMatcher
+	timer := c.rendora.c.Headless.ElementMatchTimer
+	duration := time.Duration(timer) * time.Second
+
+	timeout := false
+	matchTimer := time.AfterFunc(duration, func() {
+		timeout = true
+		log.Println(matcher, " element not found.")
 	})
-	if err != nil {
-		return nil, err
+
+	for {
+		r, err := c.C.DOM.GetOuterHTML(ctx, &dom.GetOuterHTMLArgs{
+			NodeID: &doc.Root.NodeID,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if strings.Contains(r.OuterHTML, matcher) || timeout {
+			matchTimer.Stop()
+			break
+		} else {
+			time.Sleep(time.Duration(sleepTime) * time.Millisecond)
+		}
 	}
 
 	elapsed := float64(time.Since(timeStart)) / float64(time.Duration(1*time.Millisecond))
 
 	if c.rendora.c.Server.Enable {
 		c.rendora.metrics.Duration.Observe(elapsed)
+	}
+
+	domResponse, err := c.C.DOM.GetOuterHTML(ctx, &dom.GetOuterHTMLArgs{
+		NodeID: &doc.Root.NodeID,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	responseHeaders := make(map[string]string)
