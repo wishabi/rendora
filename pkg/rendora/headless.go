@@ -67,7 +67,7 @@ func resolveURLHostname(arg string) (string, error) {
 	return devURL.String(), nil
 }
 
-func checkHeadless(arg string) error {
+func checkHeadless(arg string, logsMode string) error {
 	doCheck := func() error {
 		resp, err := http.Get(arg + "/json/version")
 		if err != nil {
@@ -82,7 +82,9 @@ func checkHeadless(arg string) error {
 		if err == nil {
 			return nil
 		}
-		log.Println("Cannot connect to the headless Chrome instance, trying again after 2 seconds...")
+		if logsMode != "NONE" {
+			log.Println("Cannot connect to the headless Chrome instance, trying again after 2 seconds...")
+		}
 		time.Sleep(2 * time.Second)
 	}
 	err := doCheck()
@@ -101,7 +103,7 @@ func (R *Rendora) newHeadlessClient() error {
 	}
 	ctx := context.Background()
 
-	err := checkHeadless(R.c.Headless.Internal.URL)
+	err := checkHeadless(R.c.Headless.Internal.URL, R.c.Logs)
 	if err != nil {
 		return err
 	}
@@ -229,7 +231,9 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 	timeout := false
 	matchTimer := time.AfterFunc(duration, func() {
 		timeout = true
-		log.Println(matcher, " element not found.")
+		if c.rendora.c.Logs != "NONE" {
+			log.Println(matcher, " element not found.")
+		}
 	})
 
 	for {
