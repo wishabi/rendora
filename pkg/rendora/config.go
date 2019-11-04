@@ -29,7 +29,7 @@ type backend struct {
 type rendoraConfig struct {
 	HeadlessMode string `mapstructure:"headlessMode" valid:"in(default|internal|external)"`
 	Debug        bool   `mapstructure:"debug"`
-	Logs         string `valid:"in(ERROR|INFO|DEBUG|NONE)"`
+	LogsMode     string `valid:"in(ERROR|INFO|DEBUG|NONE)"`
 	Listen       struct {
 		Address string `valid:"ip"`
 		Port    uint16 `valid:"range(1|65535)"`
@@ -121,7 +121,7 @@ func (R *Rendora) initConfig() error {
 		viper.SetConfigFile(R.cfgFile)
 	}
 
-	viper.SetDefault("logs", "NONE")
+	viper.SetDefault("logsMode", "NONE")
 	viper.SetDefault("debug", false)
 	viper.SetDefault("listen.port", 3001)
 	viper.SetDefault("listen.address", "0.0.0.0")
@@ -178,8 +178,8 @@ func (R *Rendora) initConfig() error {
 		return err
 	}
 
-	logs := viper.Get("logs")
-	if logs != "NONE" {
+	logsMode := viper.Get("logsMode")
+	if logsMode != "NONE" {
 		log.Println("Configuration loaded")
 	}
 
@@ -189,7 +189,7 @@ func (R *Rendora) initConfig() error {
 		return err
 	}
 
-	if logs != "NONE" {
+	if logsMode != "NONE" {
 		log.Println("Connected to headless Chrome")
 	}
 

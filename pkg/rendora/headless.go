@@ -103,7 +103,7 @@ func (R *Rendora) newHeadlessClient() error {
 	}
 	ctx := context.Background()
 
-	err := checkHeadless(R.c.Headless.Internal.URL, R.c.Logs)
+	err := checkHeadless(R.c.Headless.Internal.URL, R.c.LogsMode)
 	if err != nil {
 		return err
 	}
@@ -231,7 +231,7 @@ func (c *headlessClient) getResponse(uri string) (*HeadlessResponse, error) {
 	timeout := false
 	matchTimer := time.AfterFunc(duration, func() {
 		timeout = true
-		if c.rendora.c.Logs != "NONE" {
+		if c.rendora.c.LogsMode != "NONE" {
 			log.Println(matcher, " element not found.")
 		}
 	})
